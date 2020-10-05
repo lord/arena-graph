@@ -194,7 +194,7 @@ fn main() {
 }
 ```
 
-However, you'll find that this actually compiles! How is this possible? My understanding gets a little fuzzier here, but I'm pretty sure since `with_root`'s `&'a self` is covariant for `'a`, it allows the constructed `TreeNodeRef<'a>` to also have an arbitrarily long lifetime. How can we make this correctly error? Ideally we need some way to express that the `FnOnce` passed to `with_root` should *not* have a lifetime selected by the caller, but instead some unique lifetime determined by `with_root`. Fortunately for us, Rust has a bit of magic called [higher ranked trait bounds](https://doc.rust-lang.org/nomicon/hrtb.html) that do exactly that:
+However, you'll find that this actually compiles! How is this possible? My understanding gets a little fuzzier here, but I'm pretty sure since `with_root`'s `&'a self` is covariant for `'a`, it allows the constructed `TreeNodeRef<'a>` to also have an arbitrarily long lifetime. How can we make this correctly error? Ideally we need some way to express that the `FnOnce` passed to `with_root` should *not* have a lifetime selected by the caller, but instead some unique lifetime determined by `with_root`. Fortunately for us, Rust has a bit of magic called [higher ranked trait bounds](https://doc.rust-lang.org/nomicon/hrtb.html) that does exactly that:
 
 ```rust
 impl Tree {
