@@ -1,4 +1,7 @@
-# arena-graph
+<p align="center">
+  <img src="
+https://user-images.githubusercontent.com/1976330/95137243-83675c80-071c-11eb-815b-6c652262cfc2.png" alt="arena-graph: fast, arena-allocated graphs" width="226">
+</p>
 
 A library for constructing fast, pointer-based graphs in Rust. A lil hacky, and my understanding of variance is dubious at best, so consult your local lifetime specialist before using. Useful if your graph has the following properties:
 
