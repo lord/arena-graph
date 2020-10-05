@@ -5,7 +5,7 @@ A library for constructing fast, pointer-based graphs in Rust. A lil hacky, and 
 - the node lookup overhead of a slotmap-style graph is too slow for your the problem you're trying to solve
 - nodes in your graph all have the same type
 - you only need `&` access to nodes once they've been added, and can use mutexes or cells to handle mutation
-- your graph doesn't need to delete individual nodes, only an entire graph of nodes all at once (although having a `Cell<bool>` that indicates deleted status is fine)
+- your graph doesn't need to delete individual nodes, only an entire graph of nodes all at once (although having a `Cell<bool>` that indicates deleted status is fine, as is creating a linked list of deleted nodes for recycling)
 - your Node's Drop implementation doesn't need to access other nodes
 
 arena-graph is based on my vague understanding that it's perfectly safe to convert `*const Node` to `&Node`, so long as the resource targeted by that raw pointer still exists and has not been moved. Arena allocation gives us both of these properties! We only store our `*const Node` in places that will be dropped at the same time as the arena — either inside a node, or alongside the arena in the same struct. This guarantees the raw pointers won't outlive the arena they point into.
@@ -194,35 +194,42 @@ fn main() {
 }
 ```
 
-However, you'll find that this actually compiles! How is this possible? Well, TODO HRTB
-
-
-## Applying HRTBs to our graph
-
-can use a closure with a [higher-ranked trait bound](https://doc.rust-lang.org/nomicon/hrtb.html) any time we go from some covariant graph borrow to an invariant graph borrow:
+However, you'll find that this actually compiles! How is this possible? My understanding gets a little fuzzier here, but I'm pretty sure since `with_root`'s `&'a self` is covariant for `'a`, it allows the constructed `TreeNodeRef<'a>` to also have an arbitrarily long lifetime. How can we make this correctly error? Ideally we need some way to express that the `FnOnce` passed to `with_root` should *not* have a lifetime selected by the caller, but instead some unique lifetime determined by `with_root`. Fortunately for us, Rust has a bit of magic called [higher ranked trait bounds](https://doc.rust-lang.org/nomicon/hrtb.html) that do exactly that:
 
 ```rs
 impl Tree {
-    fn with<F: for <'any> FnOnce(TreeRef<'any>)>(&self: func: F) -> {
-
+    fn with_root<F: for <'any> FnOnce(TreeNodeRef<'any>)>(&self, func: F) {
+        func(TreeNodeRef {
+            mark_invariant: PhantomData,
+        })
     }
-}
-
-struct TreeRef<'a> {
-    inner: &'a TreeNode,
-    mark_invariant: PhantomData<&'a mut &'a ()>,
-}
-impl <'a> TreeRef<'a> {
-    fn
 }
 ```
 
-All of this is a lot of code, but should have little to no runtime cost. For the most part it should be completely compiled away and inlined, leaving just raw pointer dereferences and sets.
+With the code above, our `main` will correctly fail to compile, since `root_1` and `root_2` will be guaranteed to have different lifetimes.
 
 
 ## Why not `Cell<&'a Node<'a>>`?
 
+Some ppl construct graphs using a node that looks something like this:
+
+```rs
+struct Node<'a> {
+    parent: Cell<Option<&'a Self>>
+}
+```
+
+While this has the advantage of not needing unsafe, it unfortunately means your graph struct has a lifetime in it:
+
+```rs
+struct Graph<'a> {
+    arena: Arena<Node<'a>>,
+}
+```
+
+I've found that this lifetime gets in the way a lot, and results in unergonomic interfaces. It also means the `Graph` can never be moved after a node is inserted, which is an unnecessary requirement, given how arena allocated nodes are always on the heap.
+
 
 ## Does this actually work correctly??
 
-maybe?? idk
+maybe??? idk
