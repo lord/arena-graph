@@ -12,7 +12,7 @@ arena-graph is based on my vague understanding that it's perfectly safe to conve
 
 However, there's still one problem. Let's say we have a set_parent method like this:
 
-```rs
+```rust
 impl TreeNode {
   fn set_parent(&self, new_parent: &TreeNode) {
     self.parent.set(new_parent as *const TreeNode);
@@ -35,7 +35,7 @@ To get these properties, we have to talk briefly about variance.
 
 The following code [compiles](https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=22fa15a461255ce17b8acd61e0fef04f):
 
-```rs
+```rust
 #[derive(Debug)]
 struct NoClone(i32);
 
@@ -60,7 +60,7 @@ The answer is [variance](https://doc.rust-lang.org/nomicon/subtyping.html). `&'a
 
 However, the following [doesn't compile](https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=8fc847fbfef646c11493fd7a81b592dd):
 
-```rs
+```rust
 #[derive(Debug)]
 struct NoClone(i32);
 
@@ -81,7 +81,7 @@ fn print_numbers<'a>(num_1: &mut &'a NoClone, num_2: &mut &'a NoClone) {
 
 All we've changed here is switched `print_numbers` to accept `&mut &'a NoClone` arguments instead of `&'a NoClone`. Why is this invalid? Well, we could add a quick line to `print_numbers`:
 
-```rs
+```rust
 *num_1 = *num_2;
 ```
 
@@ -98,7 +98,7 @@ We mentioned earlier we want our add edge method to have two properties:
 
 To get the first property, we just need to make sure `&'a TreeNode` is invariant for `'a`. To get this, we can use a `PhantomData` and a wrapper struct:
 
-```rs
+```rust
 use std::marker::PhantomData;
 
 #[derive(Clone, Copy)]
@@ -122,7 +122,7 @@ impl <'a> TreeNodeRef<'a> {
 
 We still need that second property, though, where two trees always produce `TreeNodeRef`s with different lifetimes. There's a lot here that won't work. For instance, this stripped down example initially appears to error correctly:
 
-```rs
+```rust
 use std::marker::PhantomData;
 
 #[derive(Clone, Copy, Debug)]
@@ -158,7 +158,7 @@ fn main() {
 
 This fails because `root_1` and `root_2` have different lifetimes. But move the creation of `root_1` into the block, and we can get this to incorrectly compile:
 
-```rs
+```rust
 fn main() {
     let tree_1 = Tree;
     {
@@ -173,7 +173,7 @@ fn main() {
 
 Now root_1 and root_2 are created at the same time, and so share the same lifetime. How do we make this impossible? Initially it may seem we could use a closure to force the `root()` calls to be in different scopes:
 
-```rs
+```rust
 struct Tree;
 impl Tree {
     fn with_root<'a, F: FnOnce(TreeNodeRef<'a>)>(&'a self, func: F) {
@@ -196,7 +196,7 @@ fn main() {
 
 However, you'll find that this actually compiles! How is this possible? My understanding gets a little fuzzier here, but I'm pretty sure since `with_root`'s `&'a self` is covariant for `'a`, it allows the constructed `TreeNodeRef<'a>` to also have an arbitrarily long lifetime. How can we make this correctly error? Ideally we need some way to express that the `FnOnce` passed to `with_root` should *not* have a lifetime selected by the caller, but instead some unique lifetime determined by `with_root`. Fortunately for us, Rust has a bit of magic called [higher ranked trait bounds](https://doc.rust-lang.org/nomicon/hrtb.html) that do exactly that:
 
-```rs
+```rust
 impl Tree {
     fn with_root<F: for <'any> FnOnce(TreeNodeRef<'any>)>(&self, func: F) {
         func(TreeNodeRef {
@@ -213,7 +213,7 @@ With the code above, our `main` will correctly fail to compile, since `root_1` a
 
 Some ppl construct graphs using a node that looks something like this:
 
-```rs
+```rust
 struct Node<'a> {
     parent: Cell<Option<&'a Self>>
 }
@@ -221,7 +221,7 @@ struct Node<'a> {
 
 While this has the advantage of not needing unsafe, it unfortunately means your graph struct has a lifetime in it:
 
-```rs
+```rust
 struct Graph<'a> {
     arena: Arena<Node<'a>>,
 }
