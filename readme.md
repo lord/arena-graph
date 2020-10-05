@@ -26,7 +26,7 @@ To avoid this, we need to ensure `new_parent` and `self` are part of the same tr
 
 What if instead, we could have the Rust compiler statically check that `self` and `new_parent` come from the same graph? The bet of this library is that you maybe can hack this in with Rust's lifetime system, if you can guarantee that:
 
-- When adding an edge from `&'a TreeNode` and `&'b TreeNode`, we ensure that `'a` and `'b` have exactly the same lifetime.
+- When adding an edge from `&'a TreeNode` to `&'b TreeNode`, we ensure that `'a` and `'b` have exactly the same lifetime.
 - If `&'a TreeNode` and `&'b TreeNode` came from different graphs, `'a` and `'b` will be different lifetimes.
 
 To get these properties, we have to talk briefly about variance.
