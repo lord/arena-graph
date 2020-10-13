@@ -171,9 +171,3 @@ impl<N> PartialEq for NodeGuard<'_, N> {
         std::ptr::eq(self.inside, other.inside)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {}
-}
