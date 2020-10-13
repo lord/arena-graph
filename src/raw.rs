@@ -45,6 +45,17 @@ impl<N> Clone for NodeGuard<'_, N> {
 
 impl<N> Copy for NodeGuard<'_, N> {}
 
+impl<N> Clone for GraphGuard<'_, N> {
+    fn clone(&self) -> Self {
+        Self {
+            inside: self.inside,
+            invariant: self.invariant,
+        }
+    }
+}
+
+impl<N> Copy for GraphGuard<'_, N> {}
+
 impl<'gg, N> Deref for NodeGuard<'gg, N> {
     type Target = N;
     fn deref(&self) -> &N {
@@ -64,6 +75,16 @@ impl<N> Graph<N> {
             inside: self,
             invariant: PhantomData,
         })
+    }
+
+    pub unsafe fn with_unchecked<'gg, 'slf>(&'slf self) -> GraphGuard<'gg, N>
+    where
+        'slf: 'gg,
+    {
+        GraphGuard {
+            inside: self,
+            invariant: PhantomData,
+        }
     }
 }
 
