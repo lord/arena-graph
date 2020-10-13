@@ -3,6 +3,10 @@ name = "arena-graph"
 version = "0.1.0"
 authors = ["Robert Lord <lord@users.noreply.github.com>"]
 edition = "2018"
+description = "a questionable library for arena-allocated graphs"
+license = "MIT"
+repository = "https://github.com/rust-lang/cargo/"
+documentation = "https://docs.rs/arena-graph"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
