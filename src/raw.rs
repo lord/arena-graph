@@ -174,7 +174,6 @@ impl<N> PartialEq for NodeGuard<'_, N> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     #[test]
     fn it_works() {}
 }
